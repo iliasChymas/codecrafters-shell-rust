@@ -3,10 +3,10 @@ use std::io::{self, Write};
 
 fn main() {
     // TODO: Uncomment the code below to pass the first stage
-    let mut cmd = String::new();
     let stdin = io::stdin();
 
     loop {
+        let mut cmd = String::new();
         print!("$ ");
         io::stdout().flush().unwrap();
         stdin.read_line(&mut cmd);
