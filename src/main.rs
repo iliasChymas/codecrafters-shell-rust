@@ -10,6 +10,11 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
         stdin.read_line(&mut cmd);
-        print!("{}: command not found\n", cmd.replace("\n", ""));
+        cmd = cmd.replace("\n", "");
+
+        match cmd.as_str() {
+            "exit" => break,
+            _ => print!("{}: command not found\n", cmd.replace("\n", ""))
+        }
     }
 }
