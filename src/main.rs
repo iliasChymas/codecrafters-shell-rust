@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
@@ -24,7 +24,48 @@ impl ShellCommand {
     }
 }
 
+struct Builtins {
+    commands: HashSet<String>
+}
+
+impl Builtins {
+    fn new() -> Self {
+        let cmds = vec![
+            "echo".to_string(),
+            "exit".to_string(),
+            "type".to_string()
+        ];
+        Self {
+            commands: HashSet::from_iter(cmds.into_iter())
+        }
+    }
+
+    fn is_builtin(&self, cmd: &str) -> bool {
+        self.commands.contains(cmd)
+    }
+
+    fn echo(&self, cmd: &ShellCommand) -> ExecutionResult {
+        println!("{}", cmd.arguments);
+        ExecutionResult::CONTIUE
+    }
+
+    fn exit(&self, cmd: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
+
+    fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
+        let message = if self.is_builtin(&cmd.arguments) {
+            format!("{} is a shell builtin", cmd.arguments)
+        } else {
+            format!("{}: not found", cmd.arguments)
+        };
+
+        println!("{}", message);
+
+        ExecutionResult::CONTIUE
+    }
+}
+
 struct Shell {
+    builtins: Builtins,
     executed: Vec<ShellCommand>
 }
 
@@ -35,28 +76,33 @@ enum ExecutionResult {
 }
 
 impl Shell {
-
     fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
-        match cmd.command.as_str() {
-            "echo" => {
-                print!("{}\n", cmd.arguments);
-                self.executed.push(cmd);
-                return Ok(ExecutionResult::CONTIUE);
-            }
-            "exit" => { 
-                self.executed.push(cmd);
-                Ok(ExecutionResult::EXIT)
-            }
-            _ => Err(format!("{}: command not found", cmd.command).into())
+        if !self.builtins.is_builtin(&cmd.command) {
+            return Err(format!("{}: command not found", cmd.command).to_string());
         }
+
+        let res = match cmd.command.as_str() {
+            "echo" => Ok(self.builtins.echo(&cmd)),
+            "exit" => Ok(self.builtins.exit(&cmd)),
+            "type" => Ok(self.builtins.type_(&cmd)),
+            _ => Ok(ExecutionResult::CONTIUE)
+        };
+
+        self.executed.push(cmd);
+
+        res
     }
 }
 
 
+
 fn main() {
     // TODO: Uncomment the code below to pass the first stage
+    let mut shell = Shell {
+        builtins: Builtins::new(),
+        executed: Vec::new()
+    };
     let stdin = io::stdin();
-    let mut shell = Shell { executed: vec![] };
     loop {
         let mut cmd = String::new();
         print!("$ ");
@@ -68,4 +114,5 @@ fn main() {
             Err(msg) => println!("{}", msg)
         }
     }
+
 }
