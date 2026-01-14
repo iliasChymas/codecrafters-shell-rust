@@ -139,33 +139,29 @@ enum ExecutionResult {
 impl Shell {
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
-        if let Ok(location) = self.capabilities.get_location(&cmd.command) {
-            let args = cmd.arguments.split(" ")
-                .filter(|item| !item.is_empty())
-                .collect::<Vec<&str>>();
+        let args = cmd.arguments.split(" ")
+            .filter(|item| !item.is_empty())
+            .collect::<Vec<&str>>();
 
-            let res = if args.len() > 0 {
-                Command::new(location)
+        let res = if args.len() > 0 {
+            Command::new(&cmd.command)
                 .args(args)
                 .output()
-            } else {
-                Command::new(location)
+        } else {
+            Command::new(&cmd.arguments)
                 .output()
-            };
+        };
 
-            if let Ok(res) = res {
-                let s = if let Ok(out) = str::from_utf8(&res.stdout) {
-                    out
-                } else if let Ok(error) = str::from_utf8(&res.stderr) {
-                    error
-                } else {
-                    ""
-                };
-                println!("{}", s);
-                return Ok(ExecutionResult::CONTIUE);
-            } else {
-                return Err("Could not parse command result into string".to_string());
+        if let Ok(res) = res {
+            if let Ok(out) = str::from_utf8(&res.stdout) {
+                println!("{}", out)
+            } else if let Ok(error) = str::from_utf8(&res.stderr) {
+                println!("{}", error)
             }
+
+            return Ok(ExecutionResult::CONTIUE);
+        } else {
+            return Err("Could not parse command result into string".to_string());
         }
         return Err(format!("{}: command not found", cmd.command).to_string());
     }
