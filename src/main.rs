@@ -49,7 +49,6 @@ impl Capabilities {
             let local_sender = sender.clone();
             let owned_chunk = chunk.to_vec();
             thread::spawn(move || {
-                let start = Instant::now();
                 owned_chunk
                     .iter()
                     .filter_map(|p| fs::read_dir(p).ok())
@@ -60,8 +59,6 @@ impl Capabilities {
                         Some((name, dir_entry))
                     })
                     .for_each(|entry| local_sender.send(entry).unwrap());
-                let duration = start.elapsed();
-                println!("{:?} -> {:?}", owned_chunk, duration);
             });
         }
 
