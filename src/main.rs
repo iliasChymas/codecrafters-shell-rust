@@ -125,9 +125,9 @@ impl Capabilities {
 }
 
 struct Shell {
+    path: String,
     capabilities: Capabilities,
     executed: Vec<ShellCommand>,
-    executables: Executables
 }
 
 #[derive(PartialEq)]
@@ -137,7 +137,13 @@ enum ExecutionResult {
 }
 
 impl Shell {
-
+    fn new(path: String) -> Self {
+        Self {
+            capabilities: Capabilities::new(&path),
+            executed: Vec::new(),
+            path: path
+        }
+    }
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
         let args = cmd.arguments.split(" ")
             .filter(|item| !item.is_empty())
@@ -145,25 +151,27 @@ impl Shell {
 
         let res = if args.len() > 0 {
             Command::new(&cmd.command)
+                .env("PATH", &self.path)
                 .args(args)
                 .output()
         } else {
-            Command::new(&cmd.arguments)
+            Command::new(&cmd.command)
+                .env("PATH", &self.path)
                 .output()
         };
 
-        if let Ok(res) = res {
-            if let Ok(out) = str::from_utf8(&res.stdout) {
-                println!("{}", out)
-            } else if let Ok(error) = str::from_utf8(&res.stderr) {
-                println!("{}", error)
+        match res {
+            Ok(out) => {
+                if let Ok(out) = str::from_utf8(&out.stdout) {
+                    print!("{}", out)
+                }
+                Ok(ExecutionResult::CONTIUE)
+            },
+            Err(error) => { 
+                println!("Error -> {}", error);
+                Err(error.to_string())
             }
-
-            return Ok(ExecutionResult::CONTIUE);
-        } else {
-            return Err("Could not parse command result into string".to_string());
         }
-        return Err(format!("{}: command not found", cmd.command).to_string());
     }
 
     fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
@@ -185,15 +193,10 @@ impl Shell {
 }
 
 
-
 fn main() {
     // TODO: Uncomment the code below to pass the first stage
     let path = env::var("PATH").unwrap_or("".to_string());
-    let mut shell = Shell {
-        capabilities: Capabilities::new(&path),
-        executed: Vec::new(),
-        executables: Executables::new(&path)
-    };
+    let mut shell = Shell::new(path);  
     let stdin = stdin();
     loop {
         let mut cmd = String::new();
@@ -207,4 +210,5 @@ fn main() {
         }
     }
 }
+
 
