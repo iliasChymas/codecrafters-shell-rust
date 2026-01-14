@@ -1,5 +1,5 @@
 mod executables;
-use std::{sync::mpsc, thread, time::Instant};
+use std::{process::Command, sync::mpsc, thread, time::Instant};
 use is_executable::IsExecutable;
 use executables::*;
 use std::{collections::{HashMap, HashSet}, env, fs::{self, DirEntry, FileType, ReadDir}, io::stdin};
@@ -138,8 +138,40 @@ enum ExecutionResult {
 
 impl Shell {
 
+    fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
+        if let Ok(location) = self.capabilities.get_location(&cmd.command) {
+            let args = cmd.arguments.split(" ")
+                .filter(|item| !item.is_empty())
+                .collect::<Vec<&str>>();
+
+            let res = if args.len() > 0 {
+                Command::new(location)
+                .args(args)
+                .output()
+            } else {
+                Command::new(location)
+                .output()
+            };
+
+            if let Ok(res) = res {
+                let s = if let Ok(out) = str::from_utf8(&res.stdout) {
+                    out
+                } else if let Ok(error) = str::from_utf8(&res.stderr) {
+                    error
+                } else {
+                    ""
+                };
+                println!("{}", s);
+                return Ok(ExecutionResult::CONTIUE);
+            } else {
+                return Err("Could not parse command result into string".to_string());
+            }
+        }
+        return Err(format!("{}: command not found", cmd.command).to_string());
+    }
+
     fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
-        if !self.capabilities.is_builtin(&cmd.command) {
+        if !self.capabilities.is_builtin(&cmd.command) && !self.capabilities.is_executable(&cmd.command) {
             return Err(format!("{}: command not found", cmd.command).to_string());
         }
 
@@ -147,7 +179,7 @@ impl Shell {
             "echo" => Ok(self.capabilities.echo(&cmd)),
             "exit" => Ok(self.capabilities.exit(&cmd)),
             "type" => Ok(self.capabilities.type_(&cmd)),
-            _ => Ok(ExecutionResult::CONTIUE)
+            _ => self.run_executable(&cmd)
         };
 
         self.executed.push(cmd);
@@ -178,17 +210,5 @@ fn main() {
             Err(msg) => println!("{}", msg)
         }
     }
-
-    // let files: HashMap<String, DirEntry> = env::split_paths(&path)
-    //     .filter(|p| p.is_dir())
-    //     .filter_map(|p| fs::read_dir(p).ok())
-    //     .flat_map(|rd| rd.filter_map(Result::ok))
-    //     .filter(|dirEntry| dirEntry.path().is_executable())
-    //     .filter_map(|dir_entry| {
-    //         let name = dir_entry.file_name().into_string().ok()?;
-    //         Some((name, dir_entry))
-    //     })
-    //     .collect();
-    //
 }
 
