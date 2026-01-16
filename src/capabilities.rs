@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry, FileType, ReadDir}, path::Path, process::Command, sync::mpsc, thread, time::Instant};
+use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry, FileType, ReadDir}, path::{Path, PathBuf}, process::Command, sync::mpsc, thread, time::Instant};
 use std::env;
 
 
@@ -103,7 +103,8 @@ impl Capabilities {
     }
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
-        let path = Path::new(&cmd.arguments);
+        let path = PathBuf::from(&cmd.arguments);
+
 
         // Worng path 
         if !path.exists() || !path.is_dir() {
@@ -111,7 +112,13 @@ impl Capabilities {
             return ExecutionResult::CONTIUE;
         }
 
-        let result = path.to_str().map(|foo| foo.to_string());
+        let normalized_path = if path.is_relative() {
+            fs::canonicalize(&path).expect("Coud not normalize it")
+        } else {
+            path
+        };
+
+        let result = normalized_path.to_str().map(|foo| foo.to_string());
 
         // Sanity check, should always be ok
         match result {
