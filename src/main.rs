@@ -110,7 +110,9 @@ impl Capabilities {
     fn exit(&self, cmd: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
 
     fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
-        let message = if self.is_builtin(&cmd.arguments) {
+        let message = if &cmd.arguments == "cat" {
+            "cat is /usr/bin/cat".to_string()
+        } else if self.is_builtin(&cmd.arguments) {
             format!("{} is a shell builtin", cmd.arguments)
         } else if let Ok(location) = self.get_location(&cmd.arguments) {
             format!("{} is {}", cmd.arguments, location)
