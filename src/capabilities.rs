@@ -104,7 +104,7 @@ impl Capabilities {
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
         let path = PathBuf::from(&cmd.arguments);
-        let flag = &cmd.arguments == "./blueberry/blueberry";
+        let flag = &cmd.arguments == "./pineapple/pear";
 
         // Worng path 
         if !path.exists() || !path.is_dir() {
