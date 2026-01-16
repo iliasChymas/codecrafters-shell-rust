@@ -104,11 +104,17 @@ impl Capabilities {
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
         let path = PathBuf::from(&cmd.arguments);
-
+        let flag = &cmd.arguments == "./blueberry/blueberry";
 
         // Worng path 
         if !path.exists() || !path.is_dir() {
-            println!("cd: {}: No such file or directory 1", cmd.arguments);
+            if flag { 
+                println!("Exists -> {}", path.exists());
+                println!("Is dir -> {}", path.is_dir());
+                println!("Path -> {}", path.to_str().unwrap());
+
+            }
+            println!("cd: {}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
 
@@ -123,7 +129,15 @@ impl Capabilities {
         // Sanity check, should always be ok
         match result {
             Some(path_str) => self.working_directory = path_str,
-            None => println!("cd: {}: No such file or directory 2", cmd.arguments)
+            None => { 
+                if flag { 
+                    println!("Exists -> {}", normalized_path.exists());
+                    println!("Is dir -> {}", normalized_path.is_dir());
+                    println!("Path -> {}", normalized_path.to_str().unwrap());
+
+                }
+                println!("cd: {}: No such file or directory", cmd.arguments);
+            }
         };
 
         ExecutionResult::CONTIUE
