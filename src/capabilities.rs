@@ -106,12 +106,7 @@ impl Capabilities {
         let path = PathBuf::from(&cmd.arguments);
 
         // Worng path 
-        if !path.exists() || !path.is_dir() {
-            println!("Path -> {}", path.to_str().unwrap());
-            println!("Is dir -> {}", path.is_dir());
-            println!("Is file -> {}", path.is_file());
-            println!("Is symlink -> {}", path.is_symlink());
-            println!("Exists -> {}", path.exists());
+        if !path.exists() || path.is_file() {
             println!("cd: {}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
