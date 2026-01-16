@@ -106,7 +106,7 @@ impl Capabilities {
         let path = PathBuf::from(&cmd.arguments);
 
         // Worng path 
-        if !path.exists() || path.is_file() {
+        if !path.exists() {
             println!("cd: {}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
