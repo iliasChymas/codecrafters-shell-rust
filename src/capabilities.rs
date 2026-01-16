@@ -106,10 +106,10 @@ impl Capabilities {
         let path = PathBuf::from(&cmd.arguments);
 
         // Worng path 
-        if !path.exists() {
-            println!("cd: {}: No such file or directory", cmd.arguments);
-            return ExecutionResult::CONTIUE;
-        }
+        // if !path.exists() {
+        //     println!("cd: {}: No such file or directory", cmd.arguments);
+        //     return ExecutionResult::CONTIUE;
+        // }
 
         let normalized_path = if path.is_relative() {
             fs::canonicalize(&path).expect("Coud not normalize it")
