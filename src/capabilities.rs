@@ -107,7 +107,10 @@ impl Capabilities {
 
         // Worng path 
         if !path.exists() || !path.is_dir() {
-            println!("cd: {}: No such file or directory 1", cmd.arguments);
+            println!("Path -> {}", path.to_str().unwrap());
+            println!("Is dir -> {}", path.is_dir());
+            println!("Exists -> {}", path.exists());
+            println!("cd: {}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
 
