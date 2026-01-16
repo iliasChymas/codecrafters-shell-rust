@@ -81,6 +81,7 @@ impl Shell {
             "exit" => Ok(self.capabilities.exit(&cmd)),
             "type" => Ok(self.capabilities.type_(&cmd)),
             "pwd" => Ok(self.capabilities.pwd(&cmd)),
+            "cd" => Ok(self.capabilities.cd(&cmd)),
             _ => self.run_executable(&cmd)
         };
 

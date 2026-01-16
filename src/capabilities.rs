@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry, FileType, ReadDir}, sync::mpsc, process::Command, thread, time::Instant};
+use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry, FileType, ReadDir}, path::Path, process::Command, sync::mpsc, thread, time::Instant};
 use std::env;
 
 
@@ -56,7 +56,8 @@ impl Capabilities {
             "echo".to_string(),
             "exit".to_string(),
             "type".to_string(),
-            "pwd".to_string()
+            "pwd".to_string(),
+            "cd".to_string()
         ];
 
         let dir = env::current_dir()
@@ -101,6 +102,25 @@ impl Capabilities {
         ExecutionResult::CONTIUE
     }
 
+    pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
+        let path = Path::new(&cmd.arguments);
+
+        // Worng path 
+        if !path.exists() || !path.is_dir() {
+            println!("cd: {}: No such file or directory", cmd.arguments);
+            return ExecutionResult::CONTIUE;
+        }
+
+        let result = path.to_str().map(|foo| foo.to_string());
+
+        // Sanity check, should always be ok
+        match result {
+            Some(path_str) => self.working_directory = path_str,
+            None => println!("cd: {}: No such file or directory", cmd.arguments)
+        };
+
+        ExecutionResult::CONTIUE
+    }
 
     pub fn exit(&self, cmd: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
 
