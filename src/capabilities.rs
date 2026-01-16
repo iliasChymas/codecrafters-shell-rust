@@ -55,7 +55,8 @@ impl Capabilities {
         let cmds = vec![
             "echo".to_string(),
             "exit".to_string(),
-            "type".to_string()
+            "type".to_string(),
+            "pwd".to_string()
         ];
 
         let dir = env::current_dir()
