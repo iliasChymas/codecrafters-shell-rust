@@ -103,25 +103,34 @@ impl Capabilities {
     }
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
-        let path = PathBuf::from(&cmd.arguments);
+        let mut path_str = cmd.arguments.to_owned();
 
-        // Worng path 
-        if !path.exists() {
+        let mut path = PathBuf::from(&cmd.arguments);
+        if path.is_relative() {
+            let current_path = PathBuf::from(&self.working_directory);
+            path = current_path.join(&path);
+        }
+
+        let normalized_path_opt = std::fs::canonicalize(path);
+        if normalized_path_opt.is_err() {
             println!("cd: {}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
 
-        let normalized_path = if path.is_relative() {
-            fs::canonicalize(path).expect("Coud not normalize it")
-        } else {
-            path
-        };
+        let normalized_path = normalized_path_opt.unwrap();
+
+        if !normalized_path.exists() || !normalized_path.is_dir() {
+            println!("cd: {}: No such file or directory", cmd.arguments);
+            return ExecutionResult::CONTIUE;
+        }
 
         let result = normalized_path.to_str().map(|foo| foo.to_string());
 
         // Sanity check, should always be ok
         match result {
-            Some(path_str) => self.working_directory = path_str,
+            Some(path_str) => {
+                self.working_directory = path_str 
+            },
             None => println!("cd: {}: No such file or directory 2", cmd.arguments)
         };
 
