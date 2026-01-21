@@ -8,7 +8,6 @@ use crate::{ExecutionResult, ShellCommand};
 pub struct Capabilities {
     commands: HashSet<String>,
     executables: HashMap<String, DirEntry>,
-    working_directory: String
 }
 
 impl Capabilities {
@@ -58,18 +57,10 @@ impl Capabilities {
             "cd".to_string()
         ];
 
-        let dir = env::current_dir()
-            .expect("Could not read current working dir")
-            .to_str()
-            .expect("Could not parse current workign dir to string")
-            .to_string();
-
-
         let files = Capabilities::find_executables_multi_thread(path);
         Self {
             commands: HashSet::from_iter(cmds.into_iter()),
             executables: files,
-            working_directory: dir
         }
     }
 
@@ -96,7 +87,10 @@ impl Capabilities {
     }
 
     pub fn pwd(&self, _: &ShellCommand) -> ExecutionResult {
-        println!("{}", self.working_directory);
+        match std::env::current_dir() {
+            Ok(wd) => println!("{}", wd.display()),
+            Err(e) => println!("[Error] pwd: {}", e)
+        }
         ExecutionResult::CONTIUE
     }
 
@@ -108,10 +102,10 @@ impl Capabilities {
         }
 
         let mut path = PathBuf::from(&path_str);
-        if path.is_relative() {
-            let current_path = PathBuf::from(&self.working_directory);
-            path = current_path.join(&path);
-        }
+
+        if path.is_relative() && let Ok(wd) = std::env::current_dir() {
+            path = wd.join(&path);
+         }
 
         let normalized_path_opt = std::fs::canonicalize(path);
         if normalized_path_opt.is_err() {
@@ -130,10 +124,9 @@ impl Capabilities {
 
         // Sanity check, should always be ok
         match result {
-            Some(p) => {
-                self.working_directory = p 
-            },
-            None => println!("cd: {}: No such file or directory 2", cmd.arguments)
+            Some(p) => std::env::set_current_dir(&p)
+                .expect(format!("[Error] Could not cd into -> {}", p.to_string()).as_str()),
+            None => println!("cd: {}: No such file or directory", cmd.arguments)
         };
 
         ExecutionResult::CONTIUE
