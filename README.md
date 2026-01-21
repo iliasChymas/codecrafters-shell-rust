@@ -1,35 +1,88 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/1926d957-7388-44ce-bd4a-8055f60aa56d)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Simple Rust Shell
 
-This is a starting point for Rust solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+A minimal POSIX-like shell written in Rust. This project was developed as a solution to the "Build Your Own Shell" challenge on CodeCrafters.
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+## Description
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+This is a command-line interpreter that provides a basic interactive prompt. It can parse user commands, execute external programs found in the system's `PATH`, and handle several built-in commands.
 
-# Passing the first stage
+One notable feature is the multi-threaded approach to discovering executable files, which is used to populate the list of available commands at startup.
 
-The entry point for your `shell` implementation is in `src/main.rs`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+## Features
 
+- Interactive prompt using `$` as the prefix.
+- Execution of external commands (e.g., `ls`, `grep`, `cat`).
+- Built-in commands:
+    - `exit`: Terminates the shell.
+    - `echo`: Prints arguments to the standard output.
+    - `pwd`: Displays the current working directory.
+    - `cd`: Changes the current working directory. Supports `~` for the home directory.
+    - `type`: Indicates whether a command is a built-in or an external executable.
+- Multi-threaded search for executables in the directories listed in the `PATH` environment variable.
+
+### Prerequisites
+
+- Rust and Cargo must be installed. You can install them from [rust-lang.org](https://www.rust-lang.org/tools/install).
+
+### Building
+
+1.  Clone the repository.
+2.  Build the project:
+    ```sh
+    cargo build --release
+    ```
+
+### Running
+
+You can run the shell in two ways:
+
+1.  Using Cargo:
+    ```sh
+    cargo run
+    ```
+2.  By running the compiled binary directly:
+    ```sh
+    ./target/release/codecrafters-shell
+    ```
+
+## Usage
+
+Once the shell is running, you can type commands at the prompt.
+
+**Executing an external command:**
 ```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+$ ls -l
 ```
 
-Time to move on to the next stage!
+**Using a built-in command:**
+```sh
+$ echo Hello, World!
+Hello, World!
+```
 
-# Stage 2 & beyond
+**Changing directories:**
+```sh
+$ pwd
+/home/user/codecrafters-shell-rust
+$ cd /tmp
+$ pwd
+/tmp
+$ cd ~
+$ pwd
+/home/user
+```
 
-Note: This section is for stages 2 and beyond.
+**Checking a command's type:**
+```sh
+$ type echo
+echo is a shell builtin
+$ type ls
+ls is /bin/ls
+$ type unknown_command
+unknown_command: not found
+```
 
-1. Ensure you have `cargo (1.92)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+**Exiting the shell:**
+```sh
+$ exit
+```

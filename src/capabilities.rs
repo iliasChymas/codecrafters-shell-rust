@@ -68,6 +68,10 @@ impl Capabilities {
         self.executables.contains_key(input)
     }
 
+    pub fn is_exec_or_builtin(&self, input: &str) -> bool {
+        self.is_executable(input) || self.is_builtin(input)
+    }
+
     pub fn get_location(&self, input: &str) -> Result<String, ()> {
         let entry = self.executables.get(input).ok_or(())?;
         let path = entry.path();

@@ -16,14 +16,73 @@ pub enum ExecutionResult {
     CONTIUE
 }
 
+pub struct ArgsParser {
+    chars: Vec<char>,
+    index: usize,
+    reading_string: bool,
+    quotes_type: char
+}
+
+impl ArgsParser {
+    pub fn new(args: &str) -> Self {
+        Self {
+            chars: args.chars().collect::<Vec<char>>(),
+            index: 0,
+            reading_string: false,
+            quotes_type: '\''
+        }
+    }
+
+    pub fn parse(&mut self) -> String {
+        let mut stringos = String::new();
+        for (i,c) in self.chars.iter().enumerate() {
+            match c {
+                '\'' | '"' => {
+                    if self.reading_string {
+                        if &self.quotes_type == c {
+                            self.reading_string = false;
+                            continue;
+                        }
+                        stringos.push(c.clone());
+                    } else {
+                        self.reading_string = true;
+                        self.quotes_type = c.clone();
+                    }
+                },
+                '\n' if !self.reading_string => {},
+                _ => stringos.push(c.clone())
+            };
+        }
+        stringos
+    }
+}
+
+
 impl Shell {
    pub fn new(path: String) -> Self {
-
         Self {
             capabilities: Capabilities::new(&path),
             executed: Vec::new(),
             path: path,
         }
+    }
+
+    pub fn parse_cmd(&self, input: &str) -> Result<ShellCommand, String> {
+        let text = input.trim();
+        let Some((cmd, args)) = text.split_once(" ") else {
+            if !self.capabilities.is_exec_or_builtin(text.trim()) {
+                return Err(format!("{}: command not found", text));
+            }
+            return Ok(ShellCommand { arguments: "".to_string(), command: text.to_owned() });
+        };
+
+        if !self.capabilities.is_exec_or_builtin(cmd) {
+            println!("{}: command not found", text);
+            return Err(format!("{}: command not found", text))
+        }
+        let mut parser: ArgsParser = ArgsParser::new(args);
+        let parsed_args = parser.parse();
+        return Ok(ShellCommand { arguments: parsed_args, command: cmd.to_string() });
     }
 
     pub fn run(&mut self) {
@@ -33,7 +92,14 @@ impl Shell {
             print!("$ ");
             io::stdout().flush().unwrap();
             stdin.read_line(&mut cmd).expect("Failed to read line");
-            let shell_cmd = parse(cmd);
+            let shell_cmd = match self.parse_cmd(&cmd) {
+                Ok(parsed_cmd) => parsed_cmd,
+                Err(err) => { 
+                    println!("{}", err);
+                    continue; 
+                }
+            };
+
             match self.execute(shell_cmd) {
                 Ok(res) => if res == ExecutionResult::EXIT { break; },
                 Err(msg) => println!("{}", msg)
