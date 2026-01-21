@@ -1,4 +1,3 @@
-mod executables;
 mod shell;
 mod capabilities;
 mod shell_command;

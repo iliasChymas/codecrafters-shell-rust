@@ -1,7 +1,5 @@
-use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry, FileType, ReadDir}, path::{Path, PathBuf}, process::Command, sync::mpsc, thread, time::Instant};
+use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry }, path::{PathBuf}, sync::mpsc, thread };
 use std::env;
-
-
 
 use is_executable::IsExecutable;
 
@@ -33,7 +31,7 @@ impl Capabilities {
                     .iter()
                     .filter_map(|p| fs::read_dir(p).ok())
                     .flat_map(|rd| rd.filter_map(Result::ok))
-                    .filter(|dirEntry| dirEntry.path().is_executable())
+                    .filter(|dir_entry| dir_entry.path().is_executable())
                     .filter_map(|dir_entry| {
                         let name = dir_entry.file_name().into_string().ok()?;
                         Some((name, dir_entry))
@@ -97,7 +95,7 @@ impl Capabilities {
         ExecutionResult::CONTIUE
     }
 
-    pub fn pwd(&self, cmd: &ShellCommand) -> ExecutionResult {
+    pub fn pwd(&self, _: &ShellCommand) -> ExecutionResult {
         println!("{}", self.working_directory);
         ExecutionResult::CONTIUE
     }
@@ -141,7 +139,7 @@ impl Capabilities {
         ExecutionResult::CONTIUE
     }
 
-    pub fn exit(&self, cmd: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
+    pub fn exit(&self, _: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
 
     pub fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
         let message = if &cmd.arguments == "cat" {

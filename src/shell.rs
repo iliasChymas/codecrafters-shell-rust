@@ -1,7 +1,7 @@
-use std::env;
 use std::{io::stdin, process::Command};
 
 use std::io::{self, Write};
+use crate::shell_command::parse;
 use crate::{ShellCommand, capabilities::Capabilities};
 
 pub struct Shell {
@@ -33,7 +33,7 @@ impl Shell {
             print!("$ ");
             io::stdout().flush().unwrap();
             stdin.read_line(&mut cmd).expect("Failed to read line");
-            let shell_cmd = ShellCommand::parse(cmd);
+            let shell_cmd = parse(cmd);
             match self.execute(shell_cmd) {
                 Ok(res) => if res == ExecutionResult::EXIT { break; },
                 Err(msg) => println!("{}", msg)
