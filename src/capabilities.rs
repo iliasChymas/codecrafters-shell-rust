@@ -103,9 +103,13 @@ impl Capabilities {
     }
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
-        let mut path_str = cmd.arguments.to_owned();
+        let mut path_str = cmd.arguments.to_string();
 
-        let mut path = PathBuf::from(&cmd.arguments);
+        if path_str.starts_with("~") {
+            path_str = path_str.replace("~", &std::env::var("HOME").expect("[Error] could not read HOME"));
+        }
+
+        let mut path = PathBuf::from(&path_str);
         if path.is_relative() {
             let current_path = PathBuf::from(&self.working_directory);
             path = current_path.join(&path);
@@ -128,8 +132,8 @@ impl Capabilities {
 
         // Sanity check, should always be ok
         match result {
-            Some(path_str) => {
-                self.working_directory = path_str 
+            Some(p) => {
+                self.working_directory = p 
             },
             None => println!("cd: {}: No such file or directory 2", cmd.arguments)
         };
