@@ -86,7 +86,12 @@ impl Capabilities {
     }
 
     pub fn echo(&self, cmd: &ShellCommand) -> ExecutionResult {
-        println!("{:?}", cmd.arguments);
+        if cmd.arguments.len() == 0 {
+            println!("");
+        } else {
+            println!("{}", cmd.arguments[0]);
+        }
+
         ExecutionResult::CONTIUE
     }
 
