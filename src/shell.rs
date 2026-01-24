@@ -59,11 +59,6 @@ impl ArgsParser {
                 },
                 '\n' if !self.reading_string => {},
                 _ => { 
-                    println!("{}", c);
-                    if *c == ' ' {
-                        println!("outside_string_space -> {}", self.outside_string_space);
-                        println!("reading_string -> {}", self.reading_string);
-                    }
                     stringos.push(c.clone());
                     self.outside_string_space = false;
                 }
