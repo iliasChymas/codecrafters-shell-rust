@@ -138,6 +138,8 @@ impl Shell {
             Ok(out) => {
                 if let Ok(out) = str::from_utf8(&out.stdout) {
                     print!("{}", out)
+                } else if let Ok(err) = str::from_utf8(&out.stderr) {
+                    print!("STDER -> {}", err)
                 }
                 Ok(ExecutionResult::CONTIUE)
             },
