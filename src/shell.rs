@@ -20,7 +20,8 @@ pub struct ArgsParser {
     chars: Vec<char>,
     index: usize,
     reading_string: bool,
-    quotes_type: char
+    quotes_type: char,
+    outside_string_space: bool
 }
 
 impl ArgsParser {
@@ -29,7 +30,8 @@ impl ArgsParser {
             chars: args.chars().collect::<Vec<char>>(),
             index: 0,
             reading_string: false,
-            quotes_type: '\''
+            quotes_type: '\'',
+            outside_string_space: false
         }
     }
 
@@ -49,8 +51,22 @@ impl ArgsParser {
                         self.quotes_type = c.clone();
                     }
                 },
+                ' ' if !self.reading_string => {
+                    if !self.outside_string_space {
+                        stringos.push(c.clone());
+                        self.outside_string_space = true;
+                    }
+                },
                 '\n' if !self.reading_string => {},
-                _ => stringos.push(c.clone())
+                _ => { 
+                    println!("{}", c);
+                    if *c == ' ' {
+                        println!("outside_string_space -> {}", self.outside_string_space);
+                        println!("reading_string -> {}", self.reading_string);
+                    }
+                    stringos.push(c.clone());
+                    self.outside_string_space = false;
+                }
             };
         }
         stringos
