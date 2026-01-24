@@ -86,7 +86,7 @@ impl Capabilities {
     }
 
     pub fn echo(&self, cmd: &ShellCommand) -> ExecutionResult {
-        println!("{}", cmd.arguments);
+        println!("{:?}", cmd.arguments);
         ExecutionResult::CONTIUE
     }
 
@@ -99,7 +99,11 @@ impl Capabilities {
     }
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
-        let mut path_str = cmd.arguments.to_string();
+        let mut path_str = if cmd.arguments.len() == 0 {
+            "~".to_string()
+        } else {
+            cmd.arguments[0].clone()
+        };
 
         if path_str.starts_with("~") {
             path_str = path_str.replace("~", &std::env::var("HOME").expect("[Error] could not read HOME"));
@@ -113,14 +117,14 @@ impl Capabilities {
 
         let normalized_path_opt = std::fs::canonicalize(path);
         if normalized_path_opt.is_err() {
-            println!("cd: {}: No such file or directory", cmd.arguments);
+            println!("cd: {:?}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
 
         let normalized_path = normalized_path_opt.unwrap();
 
         if !normalized_path.exists() || !normalized_path.is_dir() {
-            println!("cd: {}: No such file or directory", cmd.arguments);
+            println!("cd: {:?}: No such file or directory", cmd.arguments);
             return ExecutionResult::CONTIUE;
         }
 
@@ -130,7 +134,7 @@ impl Capabilities {
         match result {
             Some(p) => std::env::set_current_dir(&p)
                 .expect(format!("[Error] Could not cd into -> {}", p.to_string()).as_str()),
-            None => println!("cd: {}: No such file or directory", cmd.arguments)
+            None => println!("cd: {:?}: No such file or directory", cmd.arguments)
         };
 
         ExecutionResult::CONTIUE
@@ -139,14 +143,18 @@ impl Capabilities {
     pub fn exit(&self, _: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
 
     pub fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
-        let message = if &cmd.arguments == "cat" {
+        if cmd.arguments.len() == 0 {
+            println!(": not found");
+            return ExecutionResult::CONTIUE;
+        }
+        let message = if &cmd.arguments[0] == "cat" {
             "cat is /usr/bin/cat".to_string()
-        } else if self.is_builtin(&cmd.arguments) {
-            format!("{} is a shell builtin", cmd.arguments)
-        } else if let Ok(location) = self.get_location(&cmd.arguments) {
-            format!("{} is {}", cmd.arguments, location)
+        } else if self.is_builtin(&cmd.arguments[0]) {
+            format!("{} is a shell builtin", cmd.arguments[0])
+        } else if let Ok(location) = self.get_location(&cmd.arguments[0]) {
+            format!("{} is {}", cmd.arguments[0], location)
         } else {
-            format!("{}: not found", cmd.arguments)
+            format!("{}: not found", cmd.arguments[0])
         };
 
         println!("{}", message);

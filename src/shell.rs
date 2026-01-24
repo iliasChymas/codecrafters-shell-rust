@@ -1,7 +1,6 @@
 use std::{io::stdin, process::Command};
 
 use std::io::{self, Write};
-use crate::shell_command::parse;
 use crate::{ShellCommand, capabilities::Capabilities};
 
 pub struct Shell {
@@ -35,36 +34,45 @@ impl ArgsParser {
         }
     }
 
-    pub fn parse(&mut self) -> String {
-        let mut stringos = String::new();
+    pub fn parse(&mut self) -> Vec<String> {
+        let mut arguments: Vec<String> = Vec::new();
+        let mut buffer = String::new();
         for (i,c) in self.chars.iter().enumerate() {
             match c {
                 '\'' | '"' => {
                     if self.reading_string {
                         if &self.quotes_type == c {
                             self.reading_string = false;
-                            continue;
-                        }
-                        stringos.push(c.clone());
+                            arguments.push(buffer.clone());
+                            &buffer.clear();
+                        } 
                     } else {
                         self.reading_string = true;
                         self.quotes_type = c.clone();
                     }
                 },
                 ' ' if !self.reading_string => {
-                    if !self.outside_string_space {
-                        stringos.push(c.clone());
-                        self.outside_string_space = true;
+                    if buffer.len() != 0 {
+                        arguments.push(buffer.clone());
+                        buffer.clear();
                     }
                 },
-                '\n' if !self.reading_string => {},
+                '\n' if !self.reading_string => {
+                    if buffer.len() != 0 {
+                        arguments.push(buffer.clone());
+                        buffer.clear();
+                    }
+                },
                 _ => { 
-                    stringos.push(c.clone());
+                    buffer.push(c.clone());
                     self.outside_string_space = false;
                 }
             };
         }
-        stringos
+        if buffer.len() != 0 {
+            arguments.push(buffer.clone());
+        }
+        arguments
     }
 }
 
@@ -84,7 +92,7 @@ impl Shell {
             if !self.capabilities.is_exec_or_builtin(text.trim()) {
                 return Err(format!("{}: command not found", text));
             }
-            return Ok(ShellCommand { arguments: "".to_string(), command: text.to_owned() });
+            return Ok(ShellCommand { arguments: vec![], command: text.to_owned() });
         };
 
         if !self.capabilities.is_exec_or_builtin(cmd) {
@@ -119,14 +127,11 @@ impl Shell {
     }
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
-        let args = cmd.arguments.split(" ")
-            .filter(|item| !item.is_empty())
-            .collect::<Vec<&str>>();
 
-        let res = if args.len() > 0 {
+        let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
-                .args(args)
+                .args(&cmd.arguments)
                 .output()
         } else {
             Command::new(&cmd.command)
@@ -148,6 +153,7 @@ impl Shell {
                 Err(error.to_string())
             }
         }
+
     }
 
     pub fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
