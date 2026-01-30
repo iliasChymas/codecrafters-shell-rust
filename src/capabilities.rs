@@ -89,7 +89,7 @@ impl Capabilities {
         if cmd.arguments.len() == 0 {
             println!("");
         } else {
-            println!("{}", cmd.arguments[0]);
+            println!("{}", cmd.arguments.join(" "));
         }
 
         ExecutionResult::CONTIUE

@@ -1,7 +1,7 @@
 use std::{io::stdin, process::Command};
 
-use std::io::{self, Write};
 use crate::{ShellCommand, capabilities::Capabilities};
+use std::io::{self, Write};
 
 pub struct Shell {
     path: String,
@@ -12,7 +12,7 @@ pub struct Shell {
 #[derive(PartialEq)]
 pub enum ExecutionResult {
     EXIT,
-    CONTIUE
+    CONTIUE,
 }
 
 pub struct ArgsParser {
@@ -20,7 +20,7 @@ pub struct ArgsParser {
     index: usize,
     reading_string: bool,
     quotes_type: char,
-    outside_string_space: bool
+    outside_string_space: bool,
 }
 
 impl ArgsParser {
@@ -30,42 +30,42 @@ impl ArgsParser {
             index: 0,
             reading_string: false,
             quotes_type: '\'',
-            outside_string_space: false
+            outside_string_space: false,
         }
     }
 
     pub fn parse(&mut self) -> Vec<String> {
         let mut arguments: Vec<String> = Vec::new();
         let mut buffer = String::new();
-        for (i,c) in self.chars.iter().enumerate() {
+        for (i, c) in self.chars.iter().enumerate() {
             match c {
                 '\'' | '"' => {
                     if self.reading_string {
                         if &self.quotes_type == c {
                             self.reading_string = false;
                             arguments.push(buffer.clone());
-                            &buffer.clear();
-                        } 
+                            buffer.clear();
+                        }
                     } else {
                         self.reading_string = true;
                         self.quotes_type = c.clone();
                     }
-                },
+                }
                 ' ' if !self.reading_string => {
                     if buffer.len() != 0 {
                         arguments.push(buffer.clone());
                         buffer.clear();
                     }
-                },
+                }
                 '\n' if !self.reading_string => {
                     if buffer.len() != 0 {
                         arguments.push(buffer.clone());
                         buffer.clear();
                     }
-                },
-                _ => { 
+                }
+                _ => {
                     buffer.push(c.clone());
-                    self.outside_string_space = false;
+                    self.outside_string_space = *c == ' ';
                 }
             };
         }
@@ -76,9 +76,8 @@ impl ArgsParser {
     }
 }
 
-
 impl Shell {
-   pub fn new(path: String) -> Self {
+    pub fn new(path: String) -> Self {
         Self {
             capabilities: Capabilities::new(&path),
             executed: Vec::new(),
@@ -92,16 +91,22 @@ impl Shell {
             if !self.capabilities.is_exec_or_builtin(text.trim()) {
                 return Err(format!("{}: command not found", text));
             }
-            return Ok(ShellCommand { arguments: vec![], command: text.to_owned() });
+            return Ok(ShellCommand {
+                arguments: vec![],
+                command: text.to_owned(),
+            });
         };
 
         if !self.capabilities.is_exec_or_builtin(cmd) {
             println!("{}: command not found", text);
-            return Err(format!("{}: command not found", text))
+            return Err(format!("{}: command not found", text));
         }
         let mut parser: ArgsParser = ArgsParser::new(args);
         let parsed_args = parser.parse();
-        return Ok(ShellCommand { arguments: parsed_args, command: cmd.to_string() });
+        return Ok(ShellCommand {
+            arguments: parsed_args,
+            command: cmd.to_string(),
+        });
     }
 
     pub fn run(&mut self) {
@@ -113,30 +118,31 @@ impl Shell {
             stdin.read_line(&mut cmd).expect("Failed to read line");
             let shell_cmd = match self.parse_cmd(&cmd) {
                 Ok(parsed_cmd) => parsed_cmd,
-                Err(err) => { 
+                Err(err) => {
                     println!("{}", err);
-                    continue; 
+                    continue;
                 }
             };
 
             match self.execute(shell_cmd) {
-                Ok(res) => if res == ExecutionResult::EXIT { break; },
-                Err(msg) => println!("{}", msg)
+                Ok(res) => {
+                    if res == ExecutionResult::EXIT {
+                        break;
+                    }
+                }
+                Err(msg) => println!("{}", msg),
             }
         }
     }
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
-
         let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
                 .args(&cmd.arguments)
                 .output()
         } else {
-            Command::new(&cmd.command)
-                .env("PATH", &self.path)
-                .output()
+            Command::new(&cmd.command).env("PATH", &self.path).output()
         };
 
         match res {
@@ -147,17 +153,18 @@ impl Shell {
                     print!("STDER -> {}", err)
                 }
                 Ok(ExecutionResult::CONTIUE)
-            },
-            Err(error) => { 
+            }
+            Err(error) => {
                 println!("Error -> {}", error);
                 Err(error.to_string())
             }
         }
-
     }
 
     pub fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
-        if !self.capabilities.is_builtin(&cmd.command) && !self.capabilities.is_executable(&cmd.command) {
+        if !self.capabilities.is_builtin(&cmd.command)
+            && !self.capabilities.is_executable(&cmd.command)
+        {
             return Err(format!("{}: command not found", cmd.command).to_string());
         }
 
@@ -167,7 +174,7 @@ impl Shell {
             "type" => Ok(self.capabilities.type_(&cmd)),
             "pwd" => Ok(self.capabilities.pwd(&cmd)),
             "cd" => Ok(self.capabilities.cd(&cmd)),
-            _ => self.run_executable(&cmd)
+            _ => self.run_executable(&cmd),
         };
 
         self.executed.push(cmd);
@@ -175,4 +182,3 @@ impl Shell {
         res
     }
 }
-
