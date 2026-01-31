@@ -1,5 +1,11 @@
-use std::{collections::{HashMap, HashSet}, fs::{self, DirEntry }, path::{PathBuf}, sync::mpsc, thread };
 use std::env;
+use std::{
+    collections::{HashMap, HashSet},
+    fs::{self, DirEntry},
+    path::PathBuf,
+    sync::mpsc,
+    thread,
+};
 
 use is_executable::IsExecutable;
 
@@ -17,8 +23,10 @@ impl Capabilities {
             .filter_map(|p| p.to_str().map(|s| s.to_string()))
             .collect();
 
-        let (sender, reciever): (mpsc::Sender<(String, DirEntry)>,
-            mpsc::Receiver<(String, DirEntry)>) = mpsc::channel();
+        let (sender, reciever): (
+            mpsc::Sender<(String, DirEntry)>,
+            mpsc::Receiver<(String, DirEntry)>,
+        ) = mpsc::channel();
 
         let mut files: HashMap<String, DirEntry> = HashMap::new();
 
@@ -54,7 +62,7 @@ impl Capabilities {
             "exit".to_string(),
             "type".to_string(),
             "pwd".to_string(),
-            "cd".to_string()
+            "cd".to_string(),
         ];
 
         let files = Capabilities::find_executables_multi_thread(path);
@@ -76,9 +84,7 @@ impl Capabilities {
         let entry = self.executables.get(input).ok_or(())?;
         let path = entry.path();
 
-        path.to_str()
-            .map(|s| s.to_owned())
-            .ok_or(())
+        path.to_str().map(|s| s.to_owned()).ok_or(())
     }
 
     pub fn is_builtin(&self, cmd: &str) -> bool {
@@ -89,7 +95,7 @@ impl Capabilities {
         if cmd.arguments.len() == 0 {
             println!("");
         } else {
-            println!("{}", cmd.arguments.join(" "));
+            println!("{}", cmd.arguments.join(""));
         }
 
         ExecutionResult::CONTIUE
@@ -98,7 +104,7 @@ impl Capabilities {
     pub fn pwd(&self, _: &ShellCommand) -> ExecutionResult {
         match std::env::current_dir() {
             Ok(wd) => println!("{}", wd.display()),
-            Err(e) => println!("[Error] pwd: {}", e)
+            Err(e) => println!("[Error] pwd: {}", e),
         }
         ExecutionResult::CONTIUE
     }
@@ -111,14 +117,19 @@ impl Capabilities {
         };
 
         if path_str.starts_with("~") {
-            path_str = path_str.replace("~", &std::env::var("HOME").expect("[Error] could not read HOME"));
+            path_str = path_str.replace(
+                "~",
+                &std::env::var("HOME").expect("[Error] could not read HOME"),
+            );
         }
 
         let mut path = PathBuf::from(&path_str);
 
-        if path.is_relative() && let Ok(wd) = std::env::current_dir() {
+        if path.is_relative()
+            && let Ok(wd) = std::env::current_dir()
+        {
             path = wd.join(&path);
-         }
+        }
 
         let normalized_path_opt = std::fs::canonicalize(path);
         if normalized_path_opt.is_err() {
@@ -139,13 +150,15 @@ impl Capabilities {
         match result {
             Some(p) => std::env::set_current_dir(&p)
                 .expect(format!("[Error] Could not cd into -> {}", p.to_string()).as_str()),
-            None => println!("cd: {:?}: No such file or directory", cmd.arguments)
+            None => println!("cd: {:?}: No such file or directory", cmd.arguments),
         };
 
         ExecutionResult::CONTIUE
     }
 
-    pub fn exit(&self, _: &ShellCommand) -> ExecutionResult { ExecutionResult::EXIT }
+    pub fn exit(&self, _: &ShellCommand) -> ExecutionResult {
+        ExecutionResult::EXIT
+    }
 
     pub fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
         if cmd.arguments.len() == 0 {
@@ -167,4 +180,3 @@ impl Capabilities {
         ExecutionResult::CONTIUE
     }
 }
-

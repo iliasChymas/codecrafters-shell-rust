@@ -1,5 +1,7 @@
 use std::{io::stdin, process::Command};
 
+use bytes::buf;
+
 use crate::{ShellCommand, capabilities::Capabilities};
 use std::io::{self, Write};
 
@@ -23,6 +25,18 @@ pub struct ArgsParser {
     outside_string_space: bool,
 }
 
+#[derive(Debug)]
+enum ArgumentType {
+    RAW,
+    STRING,
+}
+
+#[derive(Debug)]
+struct Argument {
+    _type: ArgumentType,
+    value: String,
+}
+
 impl ArgsParser {
     pub fn new(args: &str) -> Self {
         Self {
@@ -36,17 +50,32 @@ impl ArgsParser {
 
     pub fn parse(&mut self) -> Vec<String> {
         let mut arguments: Vec<String> = Vec::new();
+        let mut real_arguments: Vec<Argument> = Vec::new();
         let mut buffer = String::new();
-        for (i, c) in self.chars.iter().enumerate() {
+        for c in self.chars.iter() {
             match c {
                 '\'' | '"' => {
                     if self.reading_string {
                         if &self.quotes_type == c {
                             self.reading_string = false;
-                            arguments.push(buffer.clone());
+                            let arg = if buffer.is_empty() {
+                                " ".to_string()
+                            } else {
+                                buffer.clone()
+                            };
+                            arguments.push(arg.clone());
+                            println!("arg -> {}", arg);
+                            real_arguments.push(Argument {
+                                _type: ArgumentType::STRING,
+                                value: buffer.clone(),
+                            });
                             buffer.clear();
                         }
                     } else {
+                        if buffer.len() > 0 {
+                            arguments.push(buffer.clone());
+                            buffer.clear();
+                        }
                         self.reading_string = true;
                         self.quotes_type = c.clone();
                     }
@@ -54,12 +83,22 @@ impl ArgsParser {
                 ' ' if !self.reading_string => {
                     if buffer.len() != 0 {
                         arguments.push(buffer.clone());
+                        real_arguments.push(Argument {
+                            _type: ArgumentType::RAW,
+                            value: buffer.clone(),
+                        });
                         buffer.clear();
+                    } else if !buffer.ends_with(' ') {
+                        buffer.push(c.clone());
                     }
                 }
                 '\n' if !self.reading_string => {
                     if buffer.len() != 0 {
                         arguments.push(buffer.clone());
+                        real_arguments.push(Argument {
+                            _type: ArgumentType::RAW,
+                            value: buffer.clone(),
+                        });
                         buffer.clear();
                     }
                 }
@@ -71,7 +110,12 @@ impl ArgsParser {
         }
         if buffer.len() != 0 {
             arguments.push(buffer.clone());
+            real_arguments.push(Argument {
+                _type: ArgumentType::RAW,
+                value: buffer.clone(),
+            });
         }
+        println!("{:?}", arguments);
         arguments
     }
 }
