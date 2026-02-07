@@ -38,10 +38,6 @@ impl ArgsParser {
 
     pub fn parse(&mut self) -> Vec<String> {
         let mut arguments: Vec<String> = Vec::new();
-        let mut foo: String = String::from("");
-        foo.push(' ');
-        println!("foo -> \'{}\'", foo);
-        println!("ends with space -> {}", foo.ends_with(' '));
         let mut buffer = String::new();
         for c in self.chars.iter() {
             match c {
@@ -90,7 +86,6 @@ impl ArgsParser {
         if buffer.len() != 0 {
             arguments.push(buffer.clone());
         }
-        println!("args -> {:?}", arguments);
         arguments
     }
 }
