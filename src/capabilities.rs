@@ -133,7 +133,7 @@ impl Capabilities {
 
         let normalized_path_opt = std::fs::canonicalize(path);
         if normalized_path_opt.is_err() {
-            println!("cd: {:?}: No such file or directory", cmd.arguments);
+            println!("cd: {}: No such file or directory", path_str);
             return ExecutionResult::CONTIUE;
         }
 
