@@ -88,7 +88,6 @@ impl ArgsParser {
         if buffer.len() != 0 {
             arguments.push(buffer.clone());
         }
-        println!("{:?}", arguments);
         arguments
     }
 }
