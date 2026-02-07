@@ -50,6 +50,8 @@ impl ArgsParser {
                             } else {
                                 buffer.clone()
                             };
+
+                            if arg == " " { continue; }
                             arguments.push(arg.clone());
                             buffer.clear();
                         }
@@ -86,6 +88,7 @@ impl ArgsParser {
         if buffer.len() != 0 {
             arguments.push(buffer.clone());
         }
+        println!("{:?}", arguments);
         arguments
     }
 }
