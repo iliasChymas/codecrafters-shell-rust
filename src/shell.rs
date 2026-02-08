@@ -54,6 +54,8 @@ impl ArgsParser {
                             if arg == " " { continue; }
                             arguments.push(arg.clone());
                             buffer.clear();
+                        } else {
+                            buffer.push(c.clone());
                         }
                     } else {
                         if buffer.len() > 0 {
