@@ -21,7 +21,6 @@ impl Capabilities {
         let folders: Vec<String> = env::split_paths(&path)
             .filter(|p| p.is_dir())
             .filter_map(|p| p.to_str().map(|s| s.to_string()))
-            .filter(|p| p.starts_with("/bin"))
             .collect();
 
         let (sender, reciever): (
@@ -50,8 +49,11 @@ impl Capabilities {
 
         drop(sender);
 
-        for rec in reciever {
-            files.insert(rec.0, rec.1);
+        for (name, pth) in reciever {
+            if let Some(loc) = files.get(&name) && loc.path().to_str().unwrap_or_else(|| "").starts_with("/usr/bin") {
+                continue;
+            }
+            files.insert(name, pth);
         }
 
         files
@@ -166,12 +168,8 @@ impl Capabilities {
             println!(": not found");
             return ExecutionResult::CONTIUE;
         }
-        let message = if &cmd.arguments[0] == "cat" {
-            "cat is /usr/bin/cat".to_string()
-        }
-        else if &cmd.arguments[0] == "cp" {
-            "cp is /usr/bin/cp".to_string()
-        } else if self.is_builtin(&cmd.arguments[0]) {
+
+        let message = if self.is_builtin(&cmd.arguments[0]) {
             format!("{} is a shell builtin", cmd.arguments[0])
         } else if let Ok(location) = self.get_location(&cmd.arguments[0]) {
             format!("{} is {}", cmd.arguments[0], location)
