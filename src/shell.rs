@@ -78,11 +78,24 @@ impl Shell {
     }
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
-       // println!("cat arguments -> {:?}", cmd.arguments);
+        let mut args = Vec::<String>::new();
+        let mut current_arg = String::new();
+        for arg in cmd.arguments.iter() {
+            if arg.starts_with(" ") { 
+                args.push(current_arg.clone());
+                current_arg.clear();
+                current_arg.push_str(&arg.replacen(" ", "", 1));
+                continue;
+            }
+            current_arg.push_str(&arg);
+        }
+
+        if !current_arg.is_empty() { args.push(current_arg); }
+
         let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
-                .arg(cmd.arguments.join(""))
+                .args(args)
                 .output()
         } else {
             Command::new(&cmd.command).env("PATH", &self.path).output()
@@ -91,11 +104,9 @@ impl Shell {
         match res {
             Ok(out) => {
                 if let Ok(out) = str::from_utf8(&out.stdout) {
-                    print!("{}", out);
                     return Ok(ExecutionResult::CONTIUE(Some(out.to_string())));
                 } 
-
-                Ok(ExecutionResult::CONTIUE(Option::None))
+                return Ok(ExecutionResult::CONTIUE(Option::None));
             }
             Err(error) => {
                 println!("Error -> {}", error);
@@ -118,7 +129,7 @@ impl Shell {
 
         let res = match cmd.command.as_str() {
             "echo" => Ok(self.capabilities.echo(&cmd)),
-            "exit" => Ok(self.capabilities.exit(&cmd)),
+           "exit" => Ok(self.capabilities.exit(&cmd)),
             "type" => Ok(self.capabilities.type_(&cmd)),
             "pwd" => Ok(self.capabilities.pwd(&cmd)),
             "cd" => Ok(self.capabilities.cd(&cmd)),
