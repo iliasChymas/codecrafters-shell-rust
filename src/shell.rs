@@ -78,10 +78,11 @@ impl Shell {
     }
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
+        println!("cat arguments -> {:?}", cmd.arguments);
         let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
-                .args(cmd.arguments.iter().map(|arg| arg.trim()))
+                .arg(cmd.arguments.join(""))
                 .output()
         } else {
             Command::new(&cmd.command).env("PATH", &self.path).output()
@@ -90,11 +91,11 @@ impl Shell {
         match res {
             Ok(out) => {
                 if let Ok(out) = str::from_utf8(&out.stdout) {
-                    print!("{}", out)
-                } else if let Ok(err) = str::from_utf8(&out.stderr) {
-                    print!("STDER -> {}", err)
-                }
-                Ok(ExecutionResult::CONTIUE(None))
+                    print!("{}", out);
+                    return Ok(ExecutionResult::CONTIUE(Some(out.to_string())));
+                } 
+
+                Ok(ExecutionResult::CONTIUE(Option::None))
             }
             Err(error) => {
                 println!("Error -> {}", error);
@@ -150,8 +151,23 @@ mod tests {
         }
     }
 
+    #[test] 
+    fn test_command_args() {
+        let path = env::var("PATH").unwrap();
+        let mut shell = Shell::new(path);
+
+        let result = shell.execute_line(r"cat /tmp/'bar  2'");
+
+        assert!(result.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result {
+            assert_eq!(output, "foo\n");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+    }
+
     #[test]
-    fn test_echo_escaped_spaces() {
+    fn test_slahes() {
         let path = env::var("PATH").unwrap();
         let mut shell = Shell::new(path);
 
@@ -163,45 +179,46 @@ mod tests {
         } else {
             panic!("Expected CONTIUE with output");
         }
-        
+
         // Test escaped space followed by regular spaces
         let result2 = shell.execute_line(r"echo foo\     bar");
-        
+
         assert!(result2.is_ok());
         if let Ok(ExecutionResult::CONTIUE(Some(output))) = result2 {
             assert_eq!(output, "foo bar");
         } else {
             panic!("Expected CONTIUE with output");
         }
-        
+
         // Test escaped newline
         let result3 = shell.execute_line(r"echo test\nexample");
-        
+
         assert!(result3.is_ok());
         if let Ok(ExecutionResult::CONTIUE(Some(output))) = result3 {
             assert_eq!(output, "testnexample");
         } else {
             panic!("Expected CONTIUE with output");
         }
-        
+
         // Test escaped backslash
         let result4 = shell.execute_line(r"echo hello\\world");
-        
+
         assert!(result4.is_ok());
         if let Ok(ExecutionResult::CONTIUE(Some(output))) = result4 {
             assert_eq!(output, r"hello\world");
         } else {
             panic!("Expected CONTIUE with output");
         }
-        
+
         // Test escaped quotes
         let result5 = shell.execute_line(r"echo \'hello\'");
-        
+
         assert!(result5.is_ok());
         if let Ok(ExecutionResult::CONTIUE(Some(output))) = result5 {
             assert_eq!(output, "'hello'");
         } else {
             panic!("Expected CONTIUE with output");
         }
+
     }
 }
