@@ -21,6 +21,7 @@ impl Capabilities {
         let folders: Vec<String> = env::split_paths(&path)
             .filter(|p| p.is_dir())
             .filter_map(|p| p.to_str().map(|s| s.to_string()))
+            .filter(|p| p.starts_with("/bin"))
             .collect();
 
         let (sender, reciever): (
