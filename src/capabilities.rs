@@ -167,6 +167,9 @@ impl Capabilities {
         }
         let message = if &cmd.arguments[0] == "cat" {
             "cat is /usr/bin/cat".to_string()
+        }
+        else if &cmd.arguments[0] == "cp" {
+            "cat is /usr/bin/cp".to_string()
         } else if self.is_builtin(&cmd.arguments[0]) {
             format!("{} is a shell builtin", cmd.arguments[0])
         } else if let Ok(location) = self.get_location(&cmd.arguments[0]) {
