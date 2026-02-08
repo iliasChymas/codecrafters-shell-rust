@@ -78,7 +78,7 @@ impl Shell {
     }
 
     fn run_executable(&self, cmd: &ShellCommand) -> Result<ExecutionResult, String> {
-        println!("cat arguments -> {:?}", cmd.arguments);
+       // println!("cat arguments -> {:?}", cmd.arguments);
         let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
