@@ -69,7 +69,11 @@ impl Shell {
                         break;
                     }
                     if let ExecutionResult::CONTIUE(Some(output)) = res {
-                        println!("{}", output);
+                        if output.ends_with('\n') {
+                            print!("{}", output);
+                        } else {
+                            println!("{}", output);
+                        }
                     }
                 }
                 Err(msg) => println!("{}", msg),
@@ -129,7 +133,7 @@ impl Shell {
 
         let res = match cmd.command.as_str() {
             "echo" => Ok(self.capabilities.echo(&cmd)),
-           "exit" => Ok(self.capabilities.exit(&cmd)),
+            "exit" => Ok(self.capabilities.exit(&cmd)),
             "type" => Ok(self.capabilities.type_(&cmd)),
             "pwd" => Ok(self.capabilities.pwd(&cmd)),
             "cd" => Ok(self.capabilities.cd(&cmd)),
