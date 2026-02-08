@@ -155,7 +155,7 @@ impl Shell {
         let res = if cmd.arguments.len() > 0 {
             Command::new(&cmd.command)
                 .env("PATH", &self.path)
-                .args(&cmd.arguments)
+                .args(cmd.arguments.iter().map(|arg| arg.trim()))
                 .output()
         } else {
             Command::new(&cmd.command).env("PATH", &self.path).output()
