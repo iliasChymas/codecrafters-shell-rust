@@ -1,8 +1,6 @@
 use std::{io::stdin, process::Command};
 
-use bytes::buf;
-
-use crate::{ShellCommand, capabilities::Capabilities};
+use crate::{ShellCommand, capabilities::Capabilities, args_parser::ArgsParser};
 use std::io::{self, Write};
 
 pub struct Shell {
@@ -14,84 +12,7 @@ pub struct Shell {
 #[derive(PartialEq)]
 pub enum ExecutionResult {
     EXIT,
-    CONTIUE,
-}
-
-pub struct ArgsParser {
-    chars: Vec<char>,
-    index: usize,
-    reading_string: bool,
-    quotes_type: char,
-    outside_string_space: bool,
-}
-
-impl ArgsParser {
-    pub fn new(args: &str) -> Self {
-        Self {
-            chars: args.chars().collect::<Vec<char>>(),
-            index: 0,
-            reading_string: false,
-            quotes_type: '\'',
-            outside_string_space: false,
-        }
-    }
-
-    pub fn parse(&mut self) -> Vec<String> {
-        let mut arguments: Vec<String> = Vec::new();
-        let mut buffer = String::new();
-        for c in self.chars.iter() {
-            match c {
-                '\'' | '"' => {
-                    if self.reading_string {
-                        if &self.quotes_type == c {
-                            self.reading_string = false;
-                            let arg = if buffer.is_empty() {
-                                " ".to_string()
-                            } else {
-                                buffer.clone()
-                            };
-
-                            if arg == " " { continue; }
-                            arguments.push(arg.clone());
-                            buffer.clear();
-                        } else {
-                            buffer.push(c.clone());
-                        }
-                    } else {
-                        if buffer.len() > 0 {
-                            arguments.push(buffer.clone());
-                            buffer.clear();
-                        }
-                        self.reading_string = true;
-                        self.quotes_type = c.clone();
-                    }
-                }
-                ' ' if !self.reading_string => {
-                    if buffer.len() != 0 && !buffer.ends_with(' ') {
-                        arguments.push(buffer.clone());
-                        buffer.clear();
-                    }
-                    if !buffer.ends_with(' ') {
-                        buffer.push(c.clone());
-                    }
-                }
-                '\n' if !self.reading_string => {
-                    if buffer.len() != 0 {
-                        arguments.push(buffer.clone());
-                        buffer.clear();
-                    }
-                }
-                _ => {
-                    buffer.push(c.clone());
-                    self.outside_string_space = *c == ' ';
-                }
-            };
-        }
-        if buffer.len() != 0 {
-            arguments.push(buffer.clone());
-        }
-        arguments
-    }
+    CONTIUE(Option<String>),
 }
 
 impl Shell {
@@ -147,6 +68,9 @@ impl Shell {
                     if res == ExecutionResult::EXIT {
                         break;
                     }
+                    if let ExecutionResult::CONTIUE(Some(output)) = res {
+                        println!("{}", output);
+                    }
                 }
                 Err(msg) => println!("{}", msg),
             }
@@ -170,13 +94,18 @@ impl Shell {
                 } else if let Ok(err) = str::from_utf8(&out.stderr) {
                     print!("STDER -> {}", err)
                 }
-                Ok(ExecutionResult::CONTIUE)
+                Ok(ExecutionResult::CONTIUE(None))
             }
             Err(error) => {
                 println!("Error -> {}", error);
                 Err(error.to_string())
             }
         }
+    }
+
+    pub fn execute_line(&mut self, line: &str) -> Result<ExecutionResult, String> {
+        let cmd = self.parse_cmd(line)?;
+        self.execute(cmd)
     }
 
     pub fn execute(&mut self, cmd: ShellCommand) -> Result<ExecutionResult, String> {
@@ -198,5 +127,81 @@ impl Shell {
         self.executed.push(cmd);
 
         res
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn test_echo_preserves_spacing() {
+        let path = env::var("PATH").unwrap();
+        let mut shell = Shell::new(path);
+
+        let result = shell.execute_line(r#"echo "foo   bar""#);
+
+        assert!(result.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result {
+            assert_eq!(output, "foo   bar");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+    }
+
+    #[test]
+    fn test_echo_escaped_spaces() {
+        let path = env::var("PATH").unwrap();
+        let mut shell = Shell::new(path);
+
+        let result = shell.execute_line(r"echo foo\ \ \ bar");
+
+        assert!(result.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result {
+            assert_eq!(output, "foo   bar");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+        
+        // Test escaped space followed by regular spaces
+        let result2 = shell.execute_line(r"echo foo\     bar");
+        
+        assert!(result2.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result2 {
+            assert_eq!(output, "foo bar");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+        
+        // Test escaped newline
+        let result3 = shell.execute_line(r"echo test\nexample");
+        
+        assert!(result3.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result3 {
+            assert_eq!(output, "testnexample");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+        
+        // Test escaped backslash
+        let result4 = shell.execute_line(r"echo hello\\world");
+        
+        assert!(result4.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result4 {
+            assert_eq!(output, r"hello\world");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
+        
+        // Test escaped quotes
+        let result5 = shell.execute_line(r"echo \'hello\'");
+        
+        assert!(result5.is_ok());
+        if let Ok(ExecutionResult::CONTIUE(Some(output))) = result5 {
+            assert_eq!(output, "'hello'");
+        } else {
+            panic!("Expected CONTIUE with output");
+        }
     }
 }

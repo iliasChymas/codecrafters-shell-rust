@@ -95,13 +95,13 @@ impl Capabilities {
     }
 
     pub fn echo(&self, cmd: &ShellCommand) -> ExecutionResult {
-        if cmd.arguments.len() == 0 {
-            println!("");
+        let output = if cmd.arguments.len() == 0 {
+            String::new()
         } else {
-            println!("{}", cmd.arguments.join(""));
-        }
+            cmd.arguments.join("")
+        };
 
-        ExecutionResult::CONTIUE
+        ExecutionResult::CONTIUE(Some(output))
     }
 
     pub fn pwd(&self, _: &ShellCommand) -> ExecutionResult {
@@ -109,7 +109,7 @@ impl Capabilities {
             Ok(wd) => println!("{}", wd.display()),
             Err(e) => println!("[Error] pwd: {}", e),
         }
-        ExecutionResult::CONTIUE
+        ExecutionResult::CONTIUE(None)
     }
 
     pub fn cd(&mut self, cmd: &ShellCommand) -> ExecutionResult {
@@ -137,14 +137,14 @@ impl Capabilities {
         let normalized_path_opt = std::fs::canonicalize(path);
         if normalized_path_opt.is_err() {
             println!("cd: {}: No such file or directory", path_str);
-            return ExecutionResult::CONTIUE;
+            return ExecutionResult::CONTIUE(None);
         }
 
         let normalized_path = normalized_path_opt.unwrap();
 
         if !normalized_path.exists() || !normalized_path.is_dir() {
             println!("cd: {:?}: No such file or directory", cmd.arguments);
-            return ExecutionResult::CONTIUE;
+            return ExecutionResult::CONTIUE(None);
         }
 
         let result = normalized_path.to_str().map(|foo| foo.to_string());
@@ -156,7 +156,7 @@ impl Capabilities {
             None => println!("cd: {:?}: No such file or directory", cmd.arguments),
         };
 
-        ExecutionResult::CONTIUE
+        ExecutionResult::CONTIUE(None)
     }
 
     pub fn exit(&self, _: &ShellCommand) -> ExecutionResult {
@@ -166,7 +166,7 @@ impl Capabilities {
     pub fn type_(&self, cmd: &ShellCommand) -> ExecutionResult {
         if cmd.arguments.len() == 0 {
             println!(": not found");
-            return ExecutionResult::CONTIUE;
+            return ExecutionResult::CONTIUE(None);
         }
 
         let message = if self.is_builtin(&cmd.arguments[0]) {
@@ -179,6 +179,6 @@ impl Capabilities {
 
         println!("{}", message);
 
-        ExecutionResult::CONTIUE
+        ExecutionResult::CONTIUE(None)
     }
 }
