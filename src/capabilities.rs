@@ -50,7 +50,13 @@ impl Capabilities {
         drop(sender);
 
         for (name, pth) in reciever {
-            if let Some(loc) = files.get(&name) && loc.path().to_str().unwrap_or_else(|| "").starts_with("/usr/bin") {
+            if let Some(loc) = files.get(&name)
+                && loc
+                    .path()
+                    .to_str()
+                    .unwrap_or_else(|| "")
+                    .starts_with("/usr/bin")
+            {
                 continue;
             }
             files.insert(name, pth);

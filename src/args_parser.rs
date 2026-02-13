@@ -21,12 +21,12 @@ impl ArgsParser {
         let mut arguments: Vec<String> = Vec::new();
         let mut buffer = String::new();
         let mut i = 0;
-        
+
         while i < self.chars.len() {
             let c = self.chars[i];
-            
+
             match c {
-                '\\' if !self.reading_string && i + 1 < self.chars.len() => {
+                '\\' if i + 1 < self.chars.len() => {
                     buffer.push(self.chars[i + 1]);
                     i += 2;
                     continue;
